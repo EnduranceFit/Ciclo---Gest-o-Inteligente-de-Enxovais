@@ -1,3 +1,9 @@
 {
-  "name": "ciclo-lagoa"
+  "name": "ciclo-lagoa",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
