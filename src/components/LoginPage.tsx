@@ -27,8 +27,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   }, []);
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Automatically convert to UPPERCASE
-    setUsername(e.target.value.toUpperCase());
+    // Automatically convert to UPPERCASE and replace spaces with dots
+    setUsername(e.target.value.toUpperCase().replace(/\s+/g, '.'));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
