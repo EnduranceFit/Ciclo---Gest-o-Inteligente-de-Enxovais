@@ -9,7 +9,7 @@ interface SetupScreenProps {
   currentUser?: string | null;
 }
 
-export const SetupScreen: React.FC<SetupScreenProps> = ({ hotel, onStart, onBack }) => {
+export const SetupScreen: React.FC<SetupScreenProps> = ({ hotel, onStart, onBack, currentUser }) => {
   const [block, setBlock] = useState<string>(hotel.blocks[0]);
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());

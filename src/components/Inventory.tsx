@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { InventoryEntry, ITEMS, ItemType, createEmptyInventoryItems, InventoryItemData } from '../types';
 import { loadInventory, saveInventory } from '../lib/storage';
-import { Save, AlertCircle } from 'lucide-react';
+import { Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface InventoryProps {
   block: string;
   month: number;
   year: number;
+  hotelId: string;
 }
 
 const getInventoryItem = (inv: InventoryEntry, itemId: ItemType): InventoryItemData => {
@@ -17,40 +19,71 @@ const getInventoryItem = (inv: InventoryEntry, itemId: ItemType): InventoryItemD
   return val || { hotel: 0, lavanderia: 0, danificado: 0 };
 };
 
-export const Inventory: React.FC<InventoryProps> = ({ block, month, year }) => {
+export const Inventory: React.FC<InventoryProps> = ({ block, month, year, hotelId }) => {
   const [inventoryList, setInventoryList] = useState<InventoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentInventory, setCurrentInventory] = useState<InventoryEntry>({
+    hotelId,
     block,
     month,
     year,
     items: createEmptyInventoryItems(),
   });
   const [saved, setSaved] = useState(false);
+  const initialDataStr = useRef(JSON.stringify(createEmptyInventoryItems()));
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadInventory().then(remoteData => {
       setInventoryList(remoteData);
-      setLoading(false);
     });
   }, []);
 
   useEffect(() => {
     const existing = inventoryList.find(
-      (inv) => inv.block === block && inv.month === month && inv.year === year
+      (inv) => inv.block === block && inv.month === month && inv.year === year && inv.hotelId === hotelId
     );
     if (existing) {
       setCurrentInventory(existing);
     } else {
       setCurrentInventory({
+        hotelId,
         block,
         month,
         year,
         items: createEmptyInventoryItems(),
       });
     }
+    initialDataStr.current = JSON.stringify(existing ? existing.items : createEmptyInventoryItems());
     setSaved(false);
   }, [block, month, year, inventoryList]);
+
+  // Debounced Auto-save
+  useEffect(() => {
+    const currentDataStr = JSON.stringify(currentInventory.items);
+    if (currentDataStr === initialDataStr.current) return;
+
+    const handler = setTimeout(() => {
+      setIsSaving(true);
+      handleSave();
+      initialDataStr.current = currentDataStr;
+      toast.success('Inventário salvo automaticamente!', { position: 'bottom-center' });
+      setIsSaving(false);
+    }, 1500);
+
+    return () => clearTimeout(handler);
+  }, [currentInventory.items]);
+
+  // Keyboard shortcut Ctrl+S
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentInventory]);
 
   const handleChange = (itemId: ItemType, field: 'hotel' | 'lavanderia' | 'danificado', value: string) => {
     const numValue = parseInt(value, 10) || 0;
@@ -73,7 +106,7 @@ export const Inventory: React.FC<InventoryProps> = ({ block, month, year }) => {
   const handleSave = async () => {
     const newList = [...inventoryList];
     const index = newList.findIndex(
-      (inv) => inv.block === block && inv.month === month && inv.year === year
+      (inv) => inv.block === block && inv.month === month && inv.year === year && inv.hotelId === hotelId
     );
     
     if (index >= 0) {
@@ -85,6 +118,7 @@ export const Inventory: React.FC<InventoryProps> = ({ block, month, year }) => {
     setInventoryList(newList);
     await saveInventory(currentInventory);
     setSaved(true);
+    initialDataStr.current = JSON.stringify(currentInventory.items);
     setTimeout(() => setSaved(false), 3000);
   };
 
@@ -110,10 +144,11 @@ export const Inventory: React.FC<InventoryProps> = ({ block, month, year }) => {
           </div>
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+            disabled={isSaving}
+            className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-70"
           >
             <Save className="w-4 h-4" />
-            {saved ? 'Salvo!' : 'Salvar Inventário'}
+            {isSaving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar Inventário'}
           </button>
         </div>
         

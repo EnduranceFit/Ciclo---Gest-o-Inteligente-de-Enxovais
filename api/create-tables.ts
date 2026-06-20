@@ -1,6 +1,6 @@
 import { sql } from '@vercel/postgres';
 
-export default async function handler(request: any, response: any) {
+export default async function handler(_request: any, response: any) {
   try {
     // Create Users Table
     await sql`

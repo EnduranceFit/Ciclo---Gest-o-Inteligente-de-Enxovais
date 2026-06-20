@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, Lock, ArrowRight, ShieldCheck, RefreshCw, X } from 'lucide-react';
 import { login, changePassword, initUsers } from '../lib/auth';
+import { toast } from 'sonner';
 
 interface LoginPageProps {
   onLogin: (username: string) => void;
@@ -12,14 +13,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
-  const [error, setError] = useState('');
   
   // Change Password state
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [changePasswordMessage, setChangePasswordMessage] = useState('');
+  // const [changePasswordMessage, setChangePasswordMessage] = useState('');
 
   // Init users silently on mount (ensures tables and users exist)
   useEffect(() => {
@@ -33,11 +33,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    // setError('');
     setLoading(true);
     
     if (!username || !password) {
-      setError('Preencha o usuário e a senha.');
+      toast.error('Preencha o usuário e a senha.');
       setLoading(false);
       return;
     }
@@ -45,26 +45,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const res = await login(username, password);
     if (res.success && res.username) {
       setLoginSuccess(true);
+      toast.success('Login aprovado!');
       setTimeout(() => {
         onLogin(res.username!);
       }, 2000);
     } else {
-      setError(res.message);
+      if (res.message === 'force-password-change') {
+        toast.info('Atenção: Por motivos de segurança, você precisa criar uma nova senha.', { duration: 5000 });
+        setShowChangePassword(true);
+      } else {
+        toast.error(res.message);
+      }
       setLoading(false);
     }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setChangePasswordMessage('');
+    // setChangePasswordMessage('');
     
     if (!username || !currentPassword || !newPassword || !confirmPassword) {
-      setChangePasswordMessage('Preencha todos os campos.');
+      toast.error('Preencha todos os campos.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setChangePasswordMessage('As novas senhas não coincidem.');
+      toast.error('As novas senhas não coincidem.');
       return;
     }
 
@@ -72,17 +78,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const res = await changePassword(username, currentPassword, newPassword);
     
     if (res.success) {
-      setChangePasswordMessage('Senha alterada com sucesso! Você pode fazer login agora.');
+      toast.success('Senha alterada com sucesso! Você pode fazer login agora.');
       setTimeout(() => {
         setShowChangePassword(false);
         setPassword('');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        setChangePasswordMessage('');
+        // setChangePasswordMessage('');
       }, 3000);
     } else {
-      setChangePasswordMessage(res.message);
+      toast.error(res.message);
     }
     setLoading(false);
   };
@@ -213,12 +219,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     </div>
                   </div>
 
-                  {error && (
-                    <div className="p-3 border rounded-lg text-sm font-medium text-center bg-red-500/10 border-red-500/20 text-red-400">
-                      {error}
-                    </div>
-                  )}
-
                   <button
                     type="submit"
                     disabled={loading}
@@ -237,7 +237,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   <div className="text-center pt-4">
                     <button
                       type="button"
-                      onClick={() => { setError(''); setShowChangePassword(true); }}
+                      onClick={() => { setShowChangePassword(true); }}
                       className="text-xs font-medium text-slate-500 hover:text-sky-300 transition-colors uppercase tracking-wider"
                     >
                       Precisa alterar sua senha?
@@ -278,7 +278,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     Alterar Senha
                   </h2>
                   <button
-                    onClick={() => { setShowChangePassword(false); setChangePasswordMessage(''); }}
+                    onClick={() => { setShowChangePassword(false); }}
                     className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors"
                   >
                     <X className="w-5 h-5" />
@@ -325,12 +325,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       placeholder="Confirmar Nova Senha"
                     />
                   </div>
-
-                  {changePasswordMessage && (
-                    <div className={`p-3 border rounded-lg text-sm font-medium text-center ${changePasswordMessage.includes('sucesso') ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                      {changePasswordMessage}
-                    </div>
-                  )}
 
                   <button
                     type="submit"

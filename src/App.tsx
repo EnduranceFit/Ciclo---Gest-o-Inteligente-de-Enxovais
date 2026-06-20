@@ -1,22 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { HotelSelection } from './components/HotelSelection';
 import { SetupScreen } from './components/SetupScreen';
 import { Dashboard } from './components/Dashboard';
 import { GlobalDashboard } from './components/GlobalDashboard';
 import { LoginPage } from './components/LoginPage';
 import { HOTELS } from './types';
-import { getCurrentUser, logout } from './lib/auth';
+import { getCurrentUser, isTokenExpired, logout } from './lib/auth';
 import { LogOut } from 'lucide-react';
+import { useAppStore } from './store/useAppStore';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [hotelId, setHotelId] = useState<string | null>(null);
+  const { currentUser, hotelId, setCurrentUser, setHotelId } = useAppStore();
   const [setup, setSetup] = useState<{ block: string; month: number; year: number; user: string } | null>(null);
 
   useEffect(() => {
     const user = getCurrentUser();
-    if (user) {
+    if (user && !isTokenExpired()) {
       setCurrentUser(user);
+    } else {
+      logout();
     }
   }, []);
 
@@ -52,7 +54,7 @@ export default function App() {
   }
 
   // Common Top Bar with Logout
-  const TopBar = () => (
+  const topBar = (
     <div className="absolute top-4 right-4 z-50">
       <button 
         onClick={handleLogout}
@@ -67,7 +69,7 @@ export default function App() {
   if (!hotelId) {
     return (
       <>
-        <TopBar />
+        {topBar}
         <HotelSelection onSelect={handleHotelSelect} currentUser={currentUser} />
       </>
     );
@@ -78,7 +80,7 @@ export default function App() {
   if (!setup) {
     return (
       <>
-        <TopBar />
+        {topBar}
         <SetupScreen hotel={hotel} onStart={handleStart} onBack={handleBack} currentUser={currentUser} />
       </>
     );
@@ -87,13 +89,12 @@ export default function App() {
   if (setup.block === 'GLOBAL') {
     return (
       <>
-        <TopBar />
+        {topBar}
         <GlobalDashboard
           hotelId={hotelId}
           unitLabel={hotel.unitLabel}
           month={setup.month}
           year={setup.year}
-          user={setup.user}
           onBack={handleBack}
         />
       </>
@@ -102,7 +103,7 @@ export default function App() {
 
   return (
     <>
-      <TopBar />
+      {topBar}
       <Dashboard
         hotelId={hotelId}
         unitLabel={hotel.unitLabel}

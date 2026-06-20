@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DailyEntry, ItemType, ITEMS, createEmptyDailyItems, MONTHS } from '../types';
 import { loadData, saveData, loadPrices } from '../lib/storage';
-import { ArrowLeft, Save, FileSpreadsheet, BarChart3, Edit2, ClipboardList, Download, LayoutDashboard } from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, FileSpreadsheet, BarChart3, Edit2, ClipboardList, Download, LayoutDashboard } from 'lucide-react';
 import { DailyForm } from './DailyForm';
 import { Indicators } from './Indicators';
 import { Inventory } from './Inventory';
 import { Overview } from './Overview';
+import { useAppStore } from '../store/useAppStore';
 
 interface DashboardProps {
   hotelId: string;
@@ -20,18 +22,23 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block, month, year, user, onBack }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'daily' | 'indicators' | 'inventory'>('daily');
   const [data, setData] = useState<DailyEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [prices, setPrices] = useState<Record<string, { washingPrice: number, replacementPrice: number }>>({});
+  const { prices, setPrices } = useAppStore();
 
-  React.useEffect(() => {
-    Promise.all([loadData(), loadPrices()]).then(([remoteData, remotePrices]) => {
-      setData(remoteData);
-      
-      const hotelPrices = remotePrices.find(p => p.hotel_id === hotelId)?.prices || {};
-      setPrices(hotelPrices);
-      
-      setLoading(false);
+  useEffect(() => {
+    Promise.allSettled([loadData(), loadPrices()]).then(([dataResult, pricesResult]) => {
+      if (dataResult.status === 'fulfilled') {
+        setData(dataResult.value);
+      } else {
+        toast.error('Erro ao carregar dados.');
+      }
+
+      if (pricesResult.status === 'fulfilled') {
+        const hotelPrices = pricesResult.value.find(p => p.hotel_id === hotelId)?.prices || {};
+        setPrices(hotelPrices);
+      } else {
+        toast.error('Erro ao carregar preços.');
+      }
     });
   }, [hotelId]);
 
@@ -67,8 +74,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
     const updatedNextEntry = updateOrAddEntry(nextEntry);
 
     setData(newData);
-    await Promise.all([saveData(updatedEntry), saveData(updatedNextEntry)]);
-    setSelectedDate(null);
+    try {
+      await Promise.all([saveData(updatedEntry), saveData(updatedNextEntry)]);
+      setSelectedDate(null);
+    } catch {
+      toast.error('Erro ao salvar dados.');
+    }
   };
 
   const getEntryForDate = (dateStr: string) => {
@@ -201,7 +212,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {activeTab === 'overview' && (
-          <Overview data={currentData} month={month} year={year} block={block} hotelId={hotelId} customPrices={prices} onPricesUpdate={setPrices} />
+          <Overview data={currentData} month={month} year={year} block={block} hotelId={hotelId} customPrices={prices} />
         )}
         {activeTab === 'daily' && (
           <div className="space-y-4">
@@ -301,10 +312,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
           </div>
         )}
         {activeTab === 'indicators' && (
-          <Indicators data={currentData} month={month} year={year} hotelId={hotelId} customPrices={prices} />
+          <Indicators data={currentData} month={month} year={year} hotelId={hotelId} customPrices={prices} block={block} />
         )}
         {activeTab === 'inventory' && (
-          <Inventory block={block} month={month} year={year} />
+          <Inventory block={block} month={month} year={year} hotelId={hotelId} />
         )}
       </main>
 

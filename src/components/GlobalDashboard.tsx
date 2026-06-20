@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DailyEntry, ITEMS, MONTHS, HOTELS, ItemType, getItemPrice, OperationalMetric } from '../types';
+import { DailyEntry, ITEMS, MONTHS, HOTELS, ItemType, getItemPrice } from '../types';
 import { loadData, loadMetrics, saveMetrics } from '../lib/storage';
-import { ArrowLeft, Building2, DollarSign, TrendingDown, Activity, Trash2, PieChart, Target } from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, Building2, DollarSign, TrendingDown, Activity, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 interface GlobalDashboardProps {
@@ -9,25 +10,28 @@ interface GlobalDashboardProps {
   unitLabel: string;
   month: number;
   year: number;
-  user: string;
   onBack: () => void;
 }
 
-export const GlobalDashboard: React.FC<GlobalDashboardProps> = ({ hotelId, unitLabel, month, year, user, onBack }) => {
+export const GlobalDashboard: React.FC<GlobalDashboardProps> = ({ hotelId, unitLabel, month, year, onBack }) => {
   const [data, setData] = useState<DailyEntry[]>([]);
-  const [metrics, setMetrics] = useState<OperationalMetric[]>([]);
   const [uhsOcupadas, setUhsOcupadas] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    Promise.all([loadData(), loadMetrics()]).then(([remoteData, remoteMetrics]) => {
-      setData(remoteData);
-      setMetrics(remoteMetrics);
-      const m = remoteMetrics.find(metric => metric.hotelId === hotelId && metric.month === month && metric.year === year);
-      if (m) {
-        setUhsOcupadas(m.uhsOcupadas);
+    Promise.allSettled([loadData(), loadMetrics()]).then(([dataResult, metricsResult]) => {
+      if (dataResult.status === 'fulfilled') {
+        setData(dataResult.value);
+      } else {
+        toast.error('Erro ao carregar dados.');
       }
-      setLoading(false);
+
+      if (metricsResult.status === 'fulfilled') {
+        const m = metricsResult.value.find(metric => metric.hotelId === hotelId && metric.month === month && metric.year === year);
+        if (m) {
+          setUhsOcupadas(m.uhsOcupadas);
+        }
+      } else {
+        toast.error('Erro ao carregar métricas.');
+      }
     });
   }, [hotelId, month, year]);
 
@@ -39,7 +43,7 @@ export const GlobalDashboard: React.FC<GlobalDashboardProps> = ({ hotelId, unitL
       month,
       year,
       uhsOcupadas: val
-    });
+    }).catch(() => toast.error('Erro ao salvar métricas.'));
   };
 
   const monthLabel = MONTHS.find((m) => m.value === month)?.label;
@@ -211,7 +215,7 @@ export const GlobalDashboard: React.FC<GlobalDashboardProps> = ({ hotelId, unitL
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(val) => `R$ ${val}`} />
                   <Tooltip 
-                    formatter={(value: number) => formatCurrency(value)}
+                    formatter={(value: any) => formatCurrency(Number(value))}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend verticalAlign="top" height={36} iconType="circle"/>

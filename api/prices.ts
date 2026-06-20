@@ -1,6 +1,9 @@
 import { sql } from '@vercel/postgres';
+import { authenticateToken } from './middleware/auth';
 
 export default async function handler(request: any, response: any) {
+  const user = authenticateToken(request);
+  if (!user) return response.status(401).json({ error: 'Não autorizado' });
   if (request.method === 'GET') {
     try {
       const { rows } = await sql`SELECT hotel_id, prices FROM pricing_config;`;

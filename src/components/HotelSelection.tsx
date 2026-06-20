@@ -1,6 +1,6 @@
 import React from 'react';
 import { HOTELS } from '../types';
-import { Building2, Sparkles, ChevronRight } from 'lucide-react';
+import { Building2, ChevronRight } from 'lucide-react';
 
 interface HotelSelectionProps {
   onSelect: (hotelId: string) => void;

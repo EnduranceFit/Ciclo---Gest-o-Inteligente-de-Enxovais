@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { DailyEntry, ITEMS, ItemType, getItemPrice, ItemPriceConfig } from '../types';
-import { AlertCircle } from 'lucide-react';
 
 interface IndicatorsProps {
   data: DailyEntry[];
@@ -11,7 +10,7 @@ interface IndicatorsProps {
   customPrices?: Record<string, ItemPriceConfig>;
 }
 
-export const Indicators: React.FC<IndicatorsProps> = ({ data, month, year, block, hotelId, customPrices }) => {
+export const Indicators: React.FC<IndicatorsProps> = ({ data, month, year, hotelId, customPrices }) => {
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const calculateStats = (startDay: number, endDay: number) => {

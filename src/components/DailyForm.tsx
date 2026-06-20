@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DailyEntry, ITEMS, ItemType } from '../types';
-import { X, Save, Clock, FileText, Plus, Minus, Send, ArrowDownLeft, Trash2 } from 'lucide-react';
+import { X, Save, Clock, FileText, Send, ArrowDownLeft } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toast } from 'sonner';
 
 interface DailyFormProps {
   entry: DailyEntry;
@@ -14,14 +15,47 @@ interface DailyFormProps {
 export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, onCancel }) => {
   const [formData, setFormData] = useState<DailyEntry>(JSON.parse(JSON.stringify(entry)));
   const [nextFormData, setNextFormData] = useState<DailyEntry>(JSON.parse(JSON.stringify(nextEntry)));
+  const initialDataStr = useRef(JSON.stringify({ entry, nextEntry }));
+  const [isSaving, setIsSaving] = useState(false);
 
   // Format date for display (YYYY-MM-DD to DD/MM)
   const [year, month, day] = entry.date.split('-');
   const displayDate = `${day}/${month}/${year}`;
   const shortDate = `${day}/${month}`;
   
-  const [nextYear, nextMonth, nextDay] = nextEntry.date.split('-');
+  const [, nextMonth, nextDay] = nextEntry.date.split('-');
   const shortNextDate = `${nextDay}/${nextMonth}`;
+
+  // Keyboard shortcut Ctrl+S and Esc
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [formData, nextFormData]);
+
+  // Debounced Auto-save
+  useEffect(() => {
+    const currentDataStr = JSON.stringify({ entry: formData, nextEntry: nextFormData });
+    if (currentDataStr === initialDataStr.current) return;
+
+    const handler = setTimeout(() => {
+      setIsSaving(true);
+      onSave(formData, nextFormData);
+      initialDataStr.current = currentDataStr;
+      toast.success('Rascunho salvo automaticamente!', { position: 'bottom-center' });
+      setIsSaving(false);
+    }, 1500);
+
+    return () => clearTimeout(handler);
+  }, [formData, nextFormData, onSave]);
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -61,8 +95,14 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
   };
 
   const handleSave = () => {
+    setIsSaving(true);
     onSave(formData, nextFormData);
+    initialDataStr.current = JSON.stringify({ entry: formData, nextEntry: nextFormData });
+    toast.success('Lançamento salvo com sucesso!');
+    setIsSaving(false);
   };
+
+
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -217,10 +257,11 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
           </button>
           <button
             onClick={handleSave}
-            className="flex-[2] py-4 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-900/20"
+            disabled={isSaving}
+            className="flex-[2] py-4 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-900/20 disabled:opacity-70"
           >
             <Save className="w-5 h-5" />
-            Salvar Lançamento
+            {isSaving ? 'Salvando...' : 'Salvar Lançamento'}
           </button>
         </div>
 

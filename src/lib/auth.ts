@@ -6,7 +6,7 @@ const localHash = async (text: string) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-export const login = async (username: string, password: string):Promise<{success: boolean; message: string; username?: string}> => {
+export const login = async (username: string, password: string):Promise<{success: boolean; message: string; username?: string; token?: string}> => {
   try {
     const response = await fetch('/api/auth', {
       method: 'POST',
@@ -20,7 +20,8 @@ export const login = async (username: string, password: string):Promise<{success
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('currentUser', data.username);
-        return { success: true, message: data.message, username: data.username };
+        localStorage.setItem('token', data.token);
+        return { success: true, message: data.message, username: data.username, token: data.token };
       } else {
         return { success: false, message: data.error || 'Erro ao fazer login' };
       }
@@ -42,7 +43,8 @@ export const login = async (username: string, password: string):Promise<{success
     }
     
     localStorage.setItem('currentUser', userUpper);
-    return { success: true, message: 'Login local bem sucedido', username: userUpper };
+    localStorage.setItem('token', 'local-dev-token');
+    return { success: true, message: 'Login local bem sucedido', username: userUpper, token: 'local-dev-token' };
   }
 };
 
@@ -109,8 +111,48 @@ export const initUsers = async ():Promise<void> => {
 
 export const logout = () => {
   localStorage.removeItem('currentUser');
+  localStorage.removeItem('token');
 };
 
 export const getCurrentUser = (): string | null => {
   return localStorage.getItem('currentUser');
+};
+
+export const getToken = (): string | null => {
+  return localStorage.getItem('token');
+};
+
+export function isTokenExpired(): boolean {
+  const token = getToken();
+  if (!token) return true;
+  if (token === 'local-dev-token' || token === 'local-token') return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
+export const verifyPin = async (pin: string): Promise<{success: boolean; token?: string}> => {
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verify-pin', pin })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      localStorage.setItem('token', data.token);
+      return { success: true, token: data.token };
+    }
+    return { success: false };
+  } catch {
+    // Local fallback
+    if (pin === '1808') {
+      localStorage.setItem('token', 'local-token');
+      return { success: true, token: 'local-token' };
+    }
+    return { success: false };
+  }
 };
