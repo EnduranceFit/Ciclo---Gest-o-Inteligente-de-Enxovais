@@ -1,0 +1,5 @@
+{
+  "name": "Controle de Lavanderia",
+  "description": "Sistema para controle mensal de envio e recebimento de enxoval de lavanderia por blocos.",
+  "requestFramePermissions": []
+}
