@@ -15,10 +15,13 @@ export default function App() {
 
   useEffect(() => {
     const user = getCurrentUser();
-    if (user && !isTokenExpired()) {
+    const token = localStorage.getItem('token');
+    if (user && token && !isTokenExpired()) {
       setCurrentUser(user);
     } else {
       logout();
+      setCurrentUser(null);
+      setHotelId(null);
     }
   }, []);
 

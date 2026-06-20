@@ -23,7 +23,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'ciclo-app-storage',
-      partialize: (state) => ({ currentUser: state.currentUser, hotelId: state.hotelId }),
+      partialize: (state) => ({ prices: state.prices }),
     }
   )
 );
