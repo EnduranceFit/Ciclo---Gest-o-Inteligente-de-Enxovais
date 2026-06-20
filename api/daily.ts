@@ -1,5 +1,5 @@
 import { sql } from '@vercel/postgres';
-import { authenticateToken, requireAuth } from './_middleware/auth';
+import { authenticateToken, requireAuth } from './_middleware/auth.js';
 
 export default async function handler(request: any, response: any) {
   if (request.method === 'GET') {
