@@ -54,7 +54,14 @@ export const loadData = async (): Promise<DailyEntry[]> => {
 };
 
 export const saveData = async (data: DailyEntry | DailyEntry[]) => {
-  if (Array.isArray(data)) saveLocal('ciclo_daily_data', data);
+  const arr = tryLocal<DailyEntry>('ciclo_daily_data');
+  if (Array.isArray(data)) {
+    saveLocal('ciclo_daily_data', data);
+  } else {
+    const idx = arr.findIndex(d => d.hotelId === data.hotelId && d.block === data.block && d.date === data.date);
+    if (idx >= 0) arr[idx] = data; else arr.push(data);
+    saveLocal('ciclo_daily_data', arr);
+  }
   const res = await safeFetch('/api/daily', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -87,7 +94,14 @@ export const loadInventory = async (): Promise<InventoryEntry[]> => {
 };
 
 export const saveInventory = async (data: InventoryEntry | InventoryEntry[]) => {
-  if (Array.isArray(data)) saveLocal('ciclo_inventory_data', data);
+  const arr = tryLocal<InventoryEntry>('ciclo_inventory_data');
+  if (Array.isArray(data)) {
+    saveLocal('ciclo_inventory_data', data);
+  } else {
+    const idx = arr.findIndex(d => d.hotelId === data.hotelId && d.item === data.item);
+    if (idx >= 0) arr[idx] = data; else arr.push(data);
+    saveLocal('ciclo_inventory_data', arr);
+  }
   const res = await safeFetch('/api/inventory', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
