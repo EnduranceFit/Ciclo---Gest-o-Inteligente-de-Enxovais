@@ -1,21 +1,21 @@
 import { sql } from '@vercel/postgres';
-import { authenticateToken } from './middleware/auth';
+import { authenticateToken, requireAuth } from './_middleware/auth';
 
 export default async function handler(request: any, response: any) {
-  const user = authenticateToken(request);
-  if (!user) return response.status(401).json({ error: 'Não autorizado' });
   if (request.method === 'GET') {
+    authenticateToken(request);
     try {
       const { rows } = await sql`SELECT hotel_id, prices FROM pricing_config;`;
       return response.status(200).json(rows);
     } catch (error) {
       console.error('Error fetching prices:', error);
-      // Return empty array instead of failing so the app doesn't break if table is empty/missing
       return response.status(200).json([]);
     }
   }
 
   if (request.method === 'POST') {
+    const user = requireAuth(request, response);
+    if (!user) return;
     try {
       const { hotelId, prices } = request.body;
       

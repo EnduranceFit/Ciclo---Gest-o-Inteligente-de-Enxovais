@@ -1,10 +1,9 @@
 import { sql } from '@vercel/postgres';
-import { authenticateToken } from './middleware/auth';
+import { authenticateToken, requireAuth } from './_middleware/auth';
 
 export default async function handler(request: any, response: any) {
-  const user = authenticateToken(request);
-  if (!user) return response.status(401).json({ error: 'Não autorizado' });
   if (request.method === 'GET') {
+    authenticateToken(request);
     try {
       const { rows } = await sql`SELECT * FROM operational_metrics;`;
       const formattedRows = rows.map(row => ({
@@ -21,6 +20,8 @@ export default async function handler(request: any, response: any) {
   }
 
   if (request.method === 'POST') {
+    const user = requireAuth(request, response);
+    if (!user) return;
     try {
       const metric = request.body;
       

@@ -15,3 +15,12 @@ export function authenticateToken(request: any) {
     return null;
   }
 }
+
+export function requireAuth(request: any, response: any) {
+  const user = authenticateToken(request);
+  if (!user) {
+    response.status(401).json({ error: 'Não autorizado' });
+    return null;
+  }
+  return user;
+}
