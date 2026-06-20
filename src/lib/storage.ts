@@ -9,6 +9,14 @@ function authHeaders(): Record<string, string> {
   return headers;
 }
 
+const handleUnauthorized = (response: Response) => {
+  if (response.status === 401) {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
+    window.location.reload();
+  }
+};
+
 export const loadData = async (): Promise<DailyEntry[]> => {
   try {
     let response = await fetch('/api/daily', { headers: { ...authHeaders() } });
@@ -17,6 +25,8 @@ export const loadData = async (): Promise<DailyEntry[]> => {
       response = await fetch('/api/daily', { headers: { ...authHeaders() } });
     }
     
+    handleUnauthorized(response);
+
     if (response.headers.get("content-type")?.includes("application/json")) {
       if (!response.ok) throw new Error(`Erro ao carregar: ${await response.text()}`);
       const data = await response.json();
@@ -43,6 +53,7 @@ export const saveData = async (data: DailyEntry | DailyEntry[]) => {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(data),
     });
+    handleUnauthorized(response);
     if (!response.ok) {
        console.warn(`Erro ao salvar no BD remoto: ${await response.text()}`);
     }
@@ -58,6 +69,8 @@ export const loadInventory = async (): Promise<InventoryEntry[]> => {
       await fetch('/api/create-tables');
       response = await fetch('/api/inventory', { headers: { ...authHeaders() } });
     }
+    
+    handleUnauthorized(response);
 
     if (response.headers.get("content-type")?.includes("application/json")) {
       if (!response.ok) throw new Error(`Erro ao carregar inventário: ${await response.text()}`);
@@ -85,6 +98,7 @@ export const saveInventory = async (data: InventoryEntry | InventoryEntry[]) => 
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(data),
     });
+    handleUnauthorized(response);
     if (!response.ok) {
       console.warn(`Erro ao salvar inventário remoto: ${await response.text()}`);
     }
@@ -100,6 +114,8 @@ export const loadMetrics = async (): Promise<OperationalMetric[]> => {
       await fetch('/api/create-tables');
       response = await fetch('/api/metrics', { headers: { ...authHeaders() } });
     }
+
+    handleUnauthorized(response);
 
     if (response.headers.get("content-type")?.includes("application/json")) {
       if (!response.ok) throw new Error(`Erro ao carregar métricas: ${await response.text()}`);
@@ -118,7 +134,6 @@ export const loadMetrics = async (): Promise<OperationalMetric[]> => {
 };
 
 export const saveMetrics = async (data: OperationalMetric | OperationalMetric[]) => {
-  // If it's single entry, update local storage array
   if (!Array.isArray(data)) {
     const local = localStorage.getItem('ciclo_metrics_data');
     let arr: OperationalMetric[] = local ? JSON.parse(local) : [];
@@ -132,6 +147,7 @@ export const saveMetrics = async (data: OperationalMetric | OperationalMetric[])
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(data),
     });
+    handleUnauthorized(response);
     if (!response.ok) {
       console.warn(`Erro ao salvar métricas remotas: ${await response.text()}`);
     }
@@ -147,6 +163,8 @@ export const loadPrices = async (): Promise<{ hotel_id: string, prices: Record<s
       await fetch('/api/create-tables');
       response = await fetch('/api/prices', { headers: { ...authHeaders() } });
     }
+
+    handleUnauthorized(response);
 
     if (response.headers.get("content-type")?.includes("application/json")) {
       if (!response.ok) throw new Error(`Erro ao carregar preços: ${await response.text()}`);
@@ -177,6 +195,7 @@ export const savePrices = async (hotelId: string, prices: Record<string, ItemPri
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ hotelId, prices }),
     });
+    handleUnauthorized(response);
     if (!response.ok) {
       console.warn(`Erro ao salvar preços remotos: ${await response.text()}`);
     }
