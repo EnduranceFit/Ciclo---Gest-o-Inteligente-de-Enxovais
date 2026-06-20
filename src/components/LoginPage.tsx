@@ -213,6 +213,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     </div>
                   </div>
 
+                  {error && (
+                    <div className="p-3 border rounded-lg text-sm font-medium text-center bg-red-500/10 border-red-500/20 text-red-400">
+                      {error}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={loading}
