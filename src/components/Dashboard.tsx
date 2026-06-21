@@ -25,11 +25,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { prices, setPrices } = useAppStore();
 
+  const [debugInfo, setDebugInfo] = useState('');
+
   useEffect(() => {
     Promise.allSettled([loadData(), loadPrices()]).then(([dataResult, pricesResult]) => {
       if (dataResult.status === 'fulfilled') {
-        setData(dataResult.value);
+        const d = dataResult.value;
+        console.log('[DEBUG] loadData retornou:', d.length, 'registros', d);
+        setDebugInfo(`${d.length} registros carregados`);
+        setData(d);
       } else {
+        const err = dataResult.reason;
+        console.error('[DEBUG] loadData FALHOU:', err);
+        setDebugInfo(`Falha: ${err?.message || 'erro desconhecido'}`);
         toast.error('Erro ao carregar dados.');
       }
 
@@ -111,24 +119,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const entry = getEntryForDate(dateStr);
 
-      const nextDate = new Date(year, month - 1, day + 1);
-      const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
-      const nextEntry = getEntryForDate(nextDateStr);
-
       const rowData = [`${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`];
 
       ITEMS.forEach(item => {
         const env = entry.items[item.id]?.enviado || 0;
-        const rec = nextEntry.items[item.id]?.recebido || 0;
+        const rec = entry.items[item.id]?.recebido || 0;
         
         let acum = 0;
         for (let d = 1; d <= day; d++) {
           const dStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           const dEntry = getEntryForDate(dStr);
-          const nd = new Date(year, month - 1, d + 1);
-          const ndStr = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}-${String(nd.getDate()).padStart(2, '0')}`;
-          const ndEntry = getEntryForDate(ndStr);
-          acum += ((ndEntry.items[item.id]?.recebido || 0) - (dEntry.items[item.id]?.enviado || 0));
+          acum += ((dEntry.items[item.id]?.recebido || 0) - (dEntry.items[item.id]?.enviado || 0));
         }
 
         rowData.push(env.toString());
@@ -168,7 +169,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
             </div>
           </div>
           
-          <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
+          <div className="flex items-center gap-2">
+            {debugInfo && (
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded hidden md:inline">{debugInfo}</span>
+            )}
+            <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
             <button
               onClick={() => setActiveTab('daily')}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
@@ -205,6 +210,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">Visão Geral</span>
             </button>
+          </div>
           </div>
         </div>
       </header>
@@ -253,9 +259,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
                     const day = i + 1;
                     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const entry = getEntryForDate(dateStr);
-                    const nextDate = new Date(year, month - 1, day + 1);
-                    const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
-                    const nextEntry = getEntryForDate(nextDateStr);
                     const isWeekend = new Date(year, month - 1, day).getDay() === 0 || new Date(year, month - 1, day).getDay() === 6;
 
                     // Calculate accumulated difference up to this day
@@ -264,10 +267,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
                       for (let d = 1; d <= day; d++) {
                         const dStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                         const dEntry = getEntryForDate(dStr);
-                        const nd = new Date(year, month - 1, d + 1);
-                        const ndStr = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}-${String(nd.getDate()).padStart(2, '0')}`;
-                        const ndEntry = getEntryForDate(ndStr);
-                        acum += ((ndEntry.items[itemId]?.recebido || 0) - (dEntry.items[itemId]?.enviado || 0));
+                        acum += ((dEntry.items[itemId]?.recebido || 0) - (dEntry.items[itemId]?.enviado || 0));
                       }
                       return acum;
                     };
@@ -288,7 +288,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
                         </td>
                         {ITEMS.map((item) => {
                           const env = entry.items[item.id]?.enviado || 0;
-                          const rec = nextEntry.items[item.id]?.recebido || 0;
+                          const rec = entry.items[item.id]?.recebido || 0;
                           const acum = getAcumulado(item.id);
                           return (
                             <td key={item.id} className="px-4 py-3 whitespace-nowrap text-sm border-l border-gray-200">
