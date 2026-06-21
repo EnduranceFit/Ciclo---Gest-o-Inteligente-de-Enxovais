@@ -4,6 +4,7 @@ import { X, Save, Clock, FileText, Send, ArrowDownLeft } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
+import { TableProperties } from 'lucide-react';
 
 interface DailyFormProps {
   entry: DailyEntry;
@@ -17,6 +18,9 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
   const [nextFormData, setNextFormData] = useState<DailyEntry>(JSON.parse(JSON.stringify(nextEntry)));
   const initialDataStr = useRef(JSON.stringify({ entry, nextEntry }));
   const [isSaving, setIsSaving] = useState(false);
+  const [showSpreadsheetMode, setShowSpreadsheetMode] = useState(false);
+  const [spreadsheetTextEnv, setSpreadsheetTextEnv] = useState('');
+  const [spreadsheetTextRec, setSpreadsheetTextRec] = useState('');
 
   // Format date for display (YYYY-MM-DD to DD/MM)
   const [year, month, day] = entry.date.split('-');
@@ -100,6 +104,39 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
     initialDataStr.current = JSON.stringify({ entry: formData, nextEntry: nextFormData });
     toast.success('Lançamento salvo com sucesso!');
     setIsSaving(false);
+  };
+
+  const handleApplySpreadsheet = (target: 'enviado' | 'recebido') => {
+    const text = target === 'enviado' ? spreadsheetTextEnv : spreadsheetTextRec;
+    if (!text.trim()) return;
+
+    // Split rows by newline and columns by tab or spaces (often just newline if one column)
+    const values = text.split(/[\n\t]+/).map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+    
+    if (values.length === 0) {
+      toast.error('Nenhum número válido encontrado na colagem.');
+      return;
+    }
+
+    if (target === 'enviado') {
+      const newForm = { ...formData, items: { ...formData.items } };
+      ITEMS.forEach((item, index) => {
+        if (values[index] !== undefined) {
+           newForm.items[item.id] = { ...(newForm.items[item.id] || { recebido: 0 }), enviado: Math.max(0, values[index]) };
+        }
+      });
+      setFormData(newForm);
+      toast.success('Valores de Enviado aplicados com sucesso!');
+    } else {
+      const newNextForm = { ...nextFormData, items: { ...nextFormData.items } };
+      ITEMS.forEach((item, index) => {
+        if (values[index] !== undefined) {
+           newNextForm.items[item.id] = { ...(newNextForm.items[item.id] || { enviado: 0 }), recebido: Math.max(0, values[index]) };
+        }
+      });
+      setNextFormData(newNextForm);
+      toast.success('Valores de Recebido aplicados com sucesso!');
+    }
   };
 
 
@@ -243,7 +280,58 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
                <FileText className="w-5 h-5" />
                Gerar Romaneio em PDF
              </button>
+             <button
+               onClick={() => setShowSpreadsheetMode(!showSpreadsheetMode)}
+               className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold transition-all flex justify-center items-center gap-2 border-2 ${showSpreadsheetMode ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600 hover:bg-slate-50'}`}
+             >
+               <TableProperties className="w-5 h-5" />
+               Modo Planilha
+             </button>
           </div>
+
+          {showSpreadsheetMode && (
+            <div className="mb-8 p-6 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-in fade-in slide-in-from-top-2">
+              <h3 className="text-lg font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                <TableProperties className="w-5 h-5 text-indigo-600" />
+                Modo Planilha (Preenchimento em Lote)
+              </h3>
+              <p className="text-sm text-indigo-700 mb-6">Copie uma coluna do Excel (contendo apenas os números em ordem) e cole nos campos abaixo. O sistema aplicará os valores para cada item na mesma sequência.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
+                  <label className="block text-sm font-bold text-orange-700 mb-2">Cole a coluna de Hoje (Enviado):</label>
+                  <textarea 
+                    className="w-full h-32 text-sm p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none"
+                    placeholder="Ex:&#10;10&#10;25&#10;0&#10;15..."
+                    value={spreadsheetTextEnv}
+                    onChange={(e) => setSpreadsheetTextEnv(e.target.value)}
+                  />
+                  <button 
+                    onClick={() => handleApplySpreadsheet('enviado')}
+                    className="mt-3 w-full py-2 bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold rounded-lg transition-colors"
+                  >
+                    Aplicar no Enviado
+                  </button>
+                </div>
+                
+                <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
+                  <label className="block text-sm font-bold text-emerald-700 mb-2">Cole a coluna de Amanhã (Recebido):</label>
+                  <textarea 
+                    className="w-full h-32 text-sm p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                    placeholder="Ex:&#10;10&#10;25&#10;0&#10;15..."
+                    value={spreadsheetTextRec}
+                    onChange={(e) => setSpreadsheetTextRec(e.target.value)}
+                  />
+                  <button 
+                    onClick={() => handleApplySpreadsheet('recebido')}
+                    className="mt-3 w-full py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-lg transition-colors"
+                  >
+                    Aplicar no Recebido
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
 
