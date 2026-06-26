@@ -45,21 +45,7 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [formData, nextFormData]);
 
-  // Debounced Auto-save
-  useEffect(() => {
-    const currentDataStr = JSON.stringify({ entry: formData, nextEntry: nextFormData });
-    if (currentDataStr === initialDataStr.current) return;
 
-    const handler = setTimeout(() => {
-      setIsSaving(true);
-      onSave(formData, nextFormData);
-      initialDataStr.current = currentDataStr;
-      toast.success('Rascunho salvo automaticamente!', { position: 'bottom-center' });
-      setIsSaving(false);
-    }, 1500);
-
-    return () => clearTimeout(handler);
-  }, [formData, nextFormData, onSave]);
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -229,9 +215,9 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
                     {/* Enviado (Send to Laundry) */}
                     <div className="bg-orange-50/50 rounded-lg p-2 border border-orange-100 min-w-[80px] sm:min-w-[100px]">
                        <div className="flex justify-center items-center mb-1">
-                           <span className="text-[9px] uppercase tracking-wider font-bold text-orange-600 flex flex-col items-center gap-0.5">
-                               <div className="flex items-center gap-1"><Send className="w-2.5 h-2.5" /> Hoje</div>
-                               <span className="opacity-70">({shortDate})</span>
+                           <span className="text-sm uppercase tracking-wider font-bold text-orange-600 flex flex-col items-center gap-1">
+                               <div className="flex items-center gap-1.5"><Send className="w-4 h-4" /> Hoje</div>
+                               <span className="opacity-80 text-xs font-semibold">({shortDate})</span>
                            </span>
                        </div>
                        <div className="bg-white rounded-md border border-orange-200 shadow-sm overflow-hidden">
@@ -249,9 +235,9 @@ export const DailyForm: React.FC<DailyFormProps> = ({ entry, nextEntry, onSave, 
                     {/* Recebido (Return) */}
                     <div className="bg-emerald-50/50 rounded-lg p-2 border border-emerald-100 min-w-[100px] sm:min-w-[140px]">
                        <div className="flex justify-center items-center mb-1 text-center">
-                           <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-600 flex flex-col items-center gap-0.5">
-                               <div className="flex items-center gap-1"><ArrowDownLeft className="w-2.5 h-2.5" /> Amanhã</div>
-                               <span className="opacity-70">({shortNextDate})</span>
+                           <span className="text-sm uppercase tracking-wider font-bold text-emerald-600 flex flex-col items-center gap-1">
+                               <div className="flex items-center gap-1.5"><ArrowDownLeft className="w-4 h-4" /> Amanhã</div>
+                               <span className="opacity-80 text-xs font-semibold">({shortNextDate})</span>
                            </span>
                        </div>
                        <div className="bg-white rounded-md border border-emerald-200 shadow-sm overflow-hidden">

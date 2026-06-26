@@ -1,13 +1,13 @@
 export type ItemType =
+  | 'fronha'
   | 'lencol_casal'
   | 'lencol_solteiro'
-  | 'fronha'
   | 'toalha_banho'
-  | 'toalha_rosto'
   | 'piso'
-  | 'toalha_piscina'
-  | 'manta'
-  | 'colcha_piquet';
+  | 'toalha_rosto'
+  | 'cobertor_casal'
+  | 'colcha_piquet'
+  | 'cobre_leito';
 
 export interface ItemData {
   enviado: number;
@@ -84,15 +84,15 @@ export const HOTELS: Hotel[] = [
 ];
 
 export const ITEMS: { id: ItemType; label: string; washingPrice: number }[] = [
+  { id: 'fronha', label: 'Fronha', washingPrice: 1.70 },
   { id: 'lencol_casal', label: 'Lençol Casal', washingPrice: 1.70 },
   { id: 'lencol_solteiro', label: 'Lençol de Solteiro', washingPrice: 1.70 },
-  { id: 'fronha', label: 'Fronha', washingPrice: 1.70 },
   { id: 'toalha_banho', label: 'Toalha de Banho', washingPrice: 1.70 },
-  { id: 'toalha_rosto', label: 'Toalha de Rosto', washingPrice: 1.70 },
   { id: 'piso', label: 'Piso', washingPrice: 1.70 },
-  { id: 'toalha_piscina', label: 'Toalha de Piscina', washingPrice: 1.70 },
-  { id: 'manta', label: 'Manta', washingPrice: 4.23 },
+  { id: 'toalha_rosto', label: 'Toalha de Rosto', washingPrice: 1.70 },
+  { id: 'cobertor_casal', label: 'Cobertor Casal', washingPrice: 4.23 },
   { id: 'colcha_piquet', label: 'Colcha Piquet', washingPrice: 1.70 },
+  { id: 'cobre_leito', label: 'Cobre Leito', washingPrice: 1.70 },
 ];
 
 export const getItemPrice = (itemId: ItemType, hotelId: string): number | undefined => {
@@ -104,7 +104,6 @@ export const getItemPrice = (itemId: ItemType, hotelId: string): number | undefi
     'toalha_banho': 29.47,
     'toalha_rosto': 12.42,
     'piso': 12.42,
-    'toalha_piscina': 32.00,
     // fronha e manta = undefined (A definir)
   };
 

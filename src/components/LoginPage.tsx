@@ -9,7 +9,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(() => localStorage.getItem('lastUsername') || '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
@@ -44,6 +44,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
     const res = await login(username, password);
     if (res.success && res.username) {
+      localStorage.setItem('lastUsername', res.username);
       setLoginSuccess(true);
       toast.success('Login aprovado!');
       setTimeout(() => {
