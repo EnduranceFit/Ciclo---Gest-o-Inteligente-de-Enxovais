@@ -22,9 +22,15 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block, month, year, user, onBack }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'daily' | 'indicators' | 'inventory' | 'ajustes'>('daily');
   const [isSyncingApi, setIsSyncingApi] = useState(false);
+  const [tokenInput, setTokenInput] = useState(localStorage.getItem('token') || '');
   const [data, setData] = useState<DailyEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { prices, setPrices } = useAppStore();
+
+  const handleSaveToken = () => {
+    localStorage.setItem('token', tokenInput);
+    toast.success('Token de sincronização salvo com sucesso!');
+  };
 
   const [debugInfo, setDebugInfo] = useState('');
 
@@ -277,11 +283,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
               <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 mb-2">Autenticação & Token API</h3>
-                  <p className="text-sm text-slate-600 mb-2">
-                    Token de segurança ativo para comunicação com a API Vercel Postgres.
+                  <p className="text-sm text-slate-600 mb-3">
+                    Token JWT ativo para autenticação segura nas requisições do banco de dados em nuvem.
                   </p>
-                  <div className="text-xs font-mono bg-slate-200 p-2.5 rounded border border-slate-300 text-slate-700 truncate select-all">
-                    Bearer {localStorage.getItem('token') || 'Não autenticado'}
+                  <div className="space-y-3">
+                    <textarea
+                      value={tokenInput}
+                      onChange={(e) => setTokenInput(e.target.value)}
+                      placeholder="Nenhum token ativo no momento..."
+                      className="w-full text-xs font-mono bg-white p-2.5 rounded border border-slate-300 text-slate-700 h-20 resize-none focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveToken}
+                        className="flex-1 bg-slate-800 text-white font-bold py-1.5 px-3 rounded-lg hover:bg-slate-950 transition-colors text-xs"
+                      >
+                        Salvar Token
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(tokenInput);
+                          toast.success('Token copiado para a área de transferência!');
+                        }}
+                        className="bg-slate-200 text-slate-700 font-semibold py-1.5 px-3 rounded-lg hover:bg-slate-300 transition-colors text-xs"
+                      >
+                        Copiar
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-emerald-600">
