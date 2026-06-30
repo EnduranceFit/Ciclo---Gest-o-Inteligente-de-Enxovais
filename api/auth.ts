@@ -14,7 +14,7 @@ export default async function handler(request: any, response: any) {
     if (action === 'init') {
       const users = [
         "ADRIANA.SILVA", "GISELE.KARINE", "ANA.LIDIA", "EMILLY.CRISTINA", 
-        "LETICIA.FRANÇA", "MAYNARA.VIANA", "TEREZINHA.SILVA", "MARCELO.COSTA", "JONATAN.ALMEIDA"
+        "LETICIA.FRANÇA", "MAYNARA.VIANA", "TEREZINHA.SILVA", "MARCELO.COSTA", "JONATAN.ALMEIDA", "MARCELO.SILVA"
       ];
       // Generate a new bcrypt hash for 123
       const defaultHash = bcrypt.hashSync("123", 10);
@@ -23,7 +23,7 @@ export default async function handler(request: any, response: any) {
           await sql`
             INSERT INTO users (username, password_hash) 
             VALUES (${u}, ${defaultHash}) 
-            ON CONFLICT (username) DO NOTHING;
+            ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash;
           `;
         }
         return response.status(200).json({ message: 'Users initialized' });
@@ -56,7 +56,7 @@ export default async function handler(request: any, response: any) {
         
         if (!isValid) return response.status(401).json({ error: 'Invalid password' });
 
-        if (isLegacy || password === '123') {
+        if (isLegacy) {
            return response.status(401).json({ error: 'force-password-change' });
         }
 

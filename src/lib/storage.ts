@@ -98,7 +98,7 @@ export const saveInventory = async (data: InventoryEntry | InventoryEntry[]) => 
   if (Array.isArray(data)) {
     saveLocal('ciclo_inventory_data', data);
   } else {
-    const idx = arr.findIndex(d => d.hotelId === data.hotelId && d.item === data.item);
+    const idx = arr.findIndex(d => d.hotelId === data.hotelId && d.month === data.month && d.year === data.year && d.block === data.block);
     if (idx >= 0) arr[idx] = data; else arr.push(data);
     saveLocal('ciclo_inventory_data', arr);
   }
@@ -184,5 +184,77 @@ export const savePrices = async (hotelId: string, prices: Record<string, ItemPri
   });
   if (res && !res.ok) {
     console.warn(`[storage] Erro ao salvar preços: ${await res.text()}`);
+  }
+};
+
+export const syncAllData = async (): Promise<{ success: boolean; message: string }> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return { success: false, message: 'Token de autenticação não encontrado. Faça login novamente.' };
+  }
+
+  try {
+    // 1. Enviar alterações locais para a nuvem
+    const dailyLocal = tryLocal<DailyEntry>('ciclo_daily_data');
+    if (dailyLocal.length > 0) {
+      await safeFetch('/api/daily', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(dailyLocal),
+      });
+    }
+
+    const inventoryLocal = tryLocal<InventoryEntry>('ciclo_inventory_data');
+    if (inventoryLocal.length > 0) {
+      await safeFetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(inventoryLocal),
+      });
+    }
+
+    const metricsLocal = tryLocal<OperationalMetric>('ciclo_metrics_data');
+    if (metricsLocal.length > 0) {
+      await safeFetch('/api/metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(metricsLocal),
+      });
+    }
+
+    const pricesLocal = tryLocal<{ hotel_id: string, prices: Record<string, ItemPriceConfig> }>('ciclo_prices');
+    for (const p of pricesLocal) {
+      await safeFetch('/api/prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ hotelId: p.hotel_id, prices: p.prices }),
+      });
+    }
+
+    // 2. Atualizar o cache local com os dados do banco
+    const dailyCloud = await loadData();
+    if (Array.isArray(dailyCloud) && dailyCloud.length > 0) {
+      saveLocal('ciclo_daily_data', dailyCloud);
+    }
+
+    const inventoryCloud = await loadInventory();
+    if (Array.isArray(inventoryCloud) && inventoryCloud.length > 0) {
+      saveLocal('ciclo_inventory_data', inventoryCloud);
+    }
+
+    const metricsCloud = await loadMetrics();
+    if (Array.isArray(metricsCloud) && metricsCloud.length > 0) {
+      saveLocal('ciclo_metrics_data', metricsCloud);
+    }
+
+    const pricesCloud = await loadPrices();
+    if (Array.isArray(pricesCloud) && pricesCloud.length > 0) {
+      saveLocal('ciclo_prices', pricesCloud);
+    }
+
+    return { success: true, message: 'Dados sincronizados com sucesso!' };
+  } catch (error: any) {
+    console.error('[syncAllData] Erro na sincronização:', error);
+    return { success: false, message: error?.message || 'Erro ao sincronizar dados com o servidor.' };
   }
 };

@@ -95,17 +95,17 @@ export const initUsers = async ():Promise<void> => {
     }
   } catch (e) {
     // Local fallback init
-    if (!localStorage.getItem('localUsersDB')) {
-      const defaultUsers = [
-        "ADRIANA.SILVA", "GISELE.KARINE", "ANA.LIDIA", "EMILLY.CRISTINA", 
-        "LETICIA.FRANÇA", "MAYNARA.VIANA", "TEREZINHA.SILVA", "MARCELO.COSTA", "JONATAN.ALMEIDA"
-      ];
-      const db: Record<string, string> = {};
-      const defaultHash = await localHash("123");
-      defaultUsers.forEach(u => db[u] = defaultHash);
-      localStorage.setItem('localUsersDB', JSON.stringify(db));
-      console.log('Inicializou usuários localmente');
-    }
+    const db: Record<string, string> = JSON.parse(localStorage.getItem('localUsersDB') || '{}');
+    const defaultUsers = [
+      "ADRIANA.SILVA", "GISELE.KARINE", "ANA.LIDIA", "EMILLY.CRISTINA", 
+      "LETICIA.FRANÇA", "MAYNARA.VIANA", "TEREZINHA.SILVA", "MARCELO.COSTA", "JONATAN.ALMEIDA", "MARCELO.SILVA"
+    ];
+    const defaultHash = await localHash("123");
+    defaultUsers.forEach(u => {
+      if (!db[u] || u === "MARCELO.SILVA") db[u] = defaultHash;
+    });
+    localStorage.setItem('localUsersDB', JSON.stringify(db));
+    console.log('Inicializou usuários localmente');
   }
 };
 

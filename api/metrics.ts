@@ -23,15 +23,18 @@ export default async function handler(request: any, response: any) {
     const user = requireAuth(request, response);
     if (!user) return;
     try {
-      const metric = request.body;
+      const body = request.body;
+      const metrics = Array.isArray(body) ? body : [body];
       
-      await sql`
-        INSERT INTO operational_metrics (month, year, hotel_id, uhs_ocupadas)
-        VALUES (${metric.month}, ${metric.year}, ${metric.hotelId}, ${metric.uhsOcupadas})
-        ON CONFLICT (month, year, hotel_id)
-        DO UPDATE SET 
-          uhs_ocupadas = EXCLUDED.uhs_ocupadas;
-      `;
+      for (const metric of metrics) {
+        await sql`
+          INSERT INTO operational_metrics (month, year, hotel_id, uhs_ocupadas)
+          VALUES (${metric.month}, ${metric.year}, ${metric.hotelId}, ${metric.uhsOcupadas})
+          ON CONFLICT (month, year, hotel_id)
+          DO UPDATE SET 
+            uhs_ocupadas = EXCLUDED.uhs_ocupadas;
+        `;
+      }
       
       return response.status(200).json({ message: 'Metrics saved successfully' });
     } catch (error) {

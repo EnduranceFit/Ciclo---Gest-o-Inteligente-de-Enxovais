@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DailyEntry, ITEMS, MONTHS, HOTELS, ItemType, getItemPrice } from '../types';
+import { DailyEntry, ITEMS, MONTHS, HOTELS } from '../types';
 import { loadData, loadMetrics, saveMetrics } from '../lib/storage';
 import { toast } from 'sonner';
-import { ArrowLeft, Building2, DollarSign, Activity, Target, CalendarDays, Lightbulb, TrendingUp, TrendingDown, AlertCircle, Info } from 'lucide-react';
+import { ArrowLeft, Building2, DollarSign, Activity, Target, CalendarDays, Lightbulb, TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 interface GlobalDashboardProps {

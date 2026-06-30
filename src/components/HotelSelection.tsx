@@ -14,7 +14,7 @@ export const HotelSelection: React.FC<HotelSelectionProps> = ({ onSelect, curren
     if (user === 'JONATAN.ALMEIDA') return true;
     
     const ecoUsers = ['ADRIANA.SILVA', 'GISELE.KARINE', 'ANA.LIDIA', 'EMILLY.CRISTINA', 'LETICIA.FRANÇA'];
-    const jardinsUsers = ['MAYNARA.VIANA', 'TEREZINHA.SILVA', 'MARCELO.COSTA'];
+    const jardinsUsers = ['MAYNARA.VIANA', 'TEREZINHA.SILVA', 'MARCELO.COSTA', 'MARCELO.SILVA'];
     
     if (hotelId === 'eco') return ecoUsers.includes(user);
     if (hotelId === 'jardins') return jardinsUsers.includes(user);

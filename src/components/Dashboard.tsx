@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DailyEntry, ItemType, ITEMS, createEmptyDailyItems, MONTHS } from '../types';
-import { loadData, saveData, loadPrices } from '../lib/storage';
+import { loadData, saveData, loadPrices, syncAllData } from '../lib/storage';
 import { toast } from 'sonner';
-import { ArrowLeft, FileSpreadsheet, BarChart3, Edit2, ClipboardList, Download, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, FileSpreadsheet, BarChart3, Edit2, ClipboardList, Download, LayoutDashboard, Settings, RefreshCw, ShieldCheck } from 'lucide-react';
 import { DailyForm } from './DailyForm';
 import { Indicators } from './Indicators';
 import { Inventory } from './Inventory';
@@ -20,7 +20,8 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block, month, year, user, onBack }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'daily' | 'indicators' | 'inventory'>('daily');
+  const [activeTab, setActiveTab] = useState<'overview' | 'daily' | 'indicators' | 'inventory' | 'ajustes'>('daily');
+  const [isSyncingApi, setIsSyncingApi] = useState(false);
   const [data, setData] = useState<DailyEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { prices, setPrices } = useAppStore();
@@ -58,6 +59,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
     const prefix = `${year}-${String(month).padStart(2, '0')}`;
     return data.filter((d) => d.hotelId === hotelId && d.block === block && d.date.startsWith(prefix));
   }, [data, hotelId, block, month, year]);
+
+  const handleApiSync = async () => {
+    setIsSyncingApi(true);
+    const toastId = toast.loading('Executando sincronização com a API em nuvem...');
+    const result = await syncAllData();
+    setIsSyncingApi(false);
+    if (result.success) {
+      toast.success(result.message, { id: toastId });
+    } else {
+      toast.error(result.message, { id: toastId });
+    }
+  };
 
   const handleSaveEntry = async (entry: DailyEntry, nextEntry: DailyEntry) => {
     let newData = [...data];
@@ -210,6 +223,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">Visão Geral</span>
             </button>
+            {user.toUpperCase() === 'JONATAN.ALMEIDA' && (
+              <button
+                onClick={() => setActiveTab('ajustes')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                  activeTab === 'ajustes' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Ajustes & API</span>
+              </button>
+            )}
           </div>
           </div>
         </div>
@@ -217,6 +241,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ hotelId, unitLabel, block,
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {activeTab === 'ajustes' && user.toUpperCase() === 'JONATAN.ALMEIDA' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-4xl mx-auto space-y-6">
+            <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Ajustes da API e Sincronização em Nuvem</h2>
+                <p className="text-sm text-slate-500">Acesso restrito habilitado exclusivamente para o administrador <strong>{user}</strong></p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-emerald-600" />
+                    Sincronização Bidirecional
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Força o envio de alterações locais pendentes e sincroniza o cache local com os dados mais recentes do PostgreSQL.
+                  </p>
+                </div>
+                <button
+                  onClick={handleApiSync}
+                  disabled={isSyncingApi}
+                  className="w-full bg-emerald-600 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm shadow-sm"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncingApi ? 'animate-spin' : ''}`} />
+                  {isSyncingApi ? 'Sincronizando com a Nuvem...' : 'Sincronizar Banco em Nuvem Agora'}
+                </button>
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-bold text-slate-900 mb-2">Autenticação & Token API</h3>
+                  <p className="text-sm text-slate-600 mb-2">
+                    Token de segurança ativo para comunicação com a API Vercel Postgres.
+                  </p>
+                  <div className="text-xs font-mono bg-slate-200 p-2.5 rounded border border-slate-300 text-slate-700 truncate select-all">
+                    Bearer {localStorage.getItem('token') || 'Não autenticado'}
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-emerald-600">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Conexão Vercel API / Postgres Ativa
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'overview' && (
           <Overview data={currentData} month={month} year={year} block={block} hotelId={hotelId} customPrices={prices} />
         )}

@@ -71,7 +71,7 @@ export const HOTELS: Hotel[] = [
     unitLabel: 'Bloco',
     unitLabelPlural: 'Blocos',
     blocks: ['A', 'C', 'D'],
-    users: ['ANA LIDIA COSTA', 'GISELE KARINE', 'ADRIANA SILVA']
+    users: ['ANA.LIDIA', 'ANA LIDIA COSTA', 'GISELE.KARINE', 'GISELE KARINE', 'ADRIANA.SILVA', 'ADRIANA SILVA', 'EMILLY.CRISTINA', 'LETICIA.FRANÇA']
   },
   {
     id: 'jardins',
@@ -79,7 +79,7 @@ export const HOTELS: Hotel[] = [
     unitLabel: 'Resort',
     unitLabelPlural: 'Geral',
     blocks: ['ÚNICO'],
-    users: ['ANGELA CRISTINA', 'TEREZINHA DE JESUS']
+    users: ['MARCELO.SILVA', 'MARCELO SILVA', 'TEREZINHA.SILVA', 'TEREZINHA DE JESUS', 'MAYNARA.VIANA', 'MARCELO.COSTA']
   }
 ];
 
